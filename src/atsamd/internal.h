@@ -19,4 +19,6 @@ void enable_pclock(uint32_t pclk_id, uint32_t pm_id);
 uint32_t get_pclock_frequency(uint32_t pclk_id);
 void gpio_peripheral(uint32_t gpio, char ptype, int32_t pull_up);
 
+void setup_usb_clock_recovery(void);
+
 #endif // internal.h

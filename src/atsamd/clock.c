@@ -50,6 +50,11 @@ get_pclock_frequency(uint32_t pclk_id)
 }
 
 void
+setup_usb_clock_recovery(void)
+{
+}
+
+void
 SystemInit(void)
 {
     // Setup flash to work with 48Mhz clock

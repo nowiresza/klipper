@@ -145,6 +145,42 @@ clock_init_internal(void)
     gen_clock(CLKGEN_MAIN, GCLK_GENCTRL_SRC_DPLL0);
 }
 
+// Initialize clocks using USB recovery mode
+static void
+clock_init_usb(void)
+{
+    // Generate a 48Mhz clock from internal 32Khz clock
+    gen_clock(CLKGEN_32K, GCLK_GENCTRL_SRC_OSCULP32K);
+    route_pclock(OSCCTRL_GCLK_ID_FDPLL1, CLKGEN_32K);
+    config_dpll(1, DIV_ROUND_CLOSEST(FREQ_48M, FREQ_32K));
+    gen_clock(CLKGEN_48M, GCLK_GENCTRL_SRC_DPLL1);
+
+    // Switch main clock to 48Mhz clock
+    gen_clock(CLKGEN_MAIN, GCLK_GENCTRL_SRC_DPLL1);
+
+    // Configure DFLL48M clock (with USB 1Khz SOF as reference)
+    uint32_t mul = DIV_ROUND_CLOSEST(FREQ_48M, 1000);
+    uint32_t dfllmul = (OSCCTRL_DFLLMUL_CSTEP(7) | OSCCTRL_DFLLMUL_FSTEP(10)
+                        | OSCCTRL_DFLLMUL_MUL(mul));
+    uint32_t ctrlb = (OSCCTRL_DFLLCTRLB_WAITLOCK | OSCCTRL_DFLLCTRLB_CCDIS
+                      | OSCCTRL_DFLLCTRLB_MODE | OSCCTRL_DFLLCTRLB_USBCRM);
+    config_dfll(dfllmul, ctrlb);
+}
+
+void
+setup_usb_clock_recovery(void)
+{
+    static int have_run_setup;
+    if (!CONFIG_CLOCK_REF_USB || have_run_setup)
+        return;
+    have_run_setup = 1;
+
+    // Switch to DFLL48M clock
+    while (!(OSCCTRL->STATUS.reg & OSCCTRL_STATUS_DFLLRDY))
+        ;
+    clock_init_internal();
+}
+
 void
 SystemInit(void)
 {
@@ -154,7 +190,9 @@ SystemInit(void)
         ;
 
     // Init clocks
-    if (CONFIG_CLOCK_REF_X32K)
+    if (CONFIG_CLOCK_REF_USB)
+        clock_init_usb();
+    else if (CONFIG_CLOCK_REF_X32K)
         clock_init_32k();
     else
         clock_init_internal();

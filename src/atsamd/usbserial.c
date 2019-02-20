@@ -167,6 +167,7 @@ usb_set_configure(void)
     EP_BULKIN.EPCFG.reg = USB_DEVICE_EPCFG_EPTYPE1(3);
     EP_BULKIN.EPINTENSET.reg = (
         USB_DEVICE_EPINTENSET_TRCPT0 | USB_DEVICE_EPINTENSET_TRCPT1);
+    setup_usb_clock_recovery();
 }
 
 void
